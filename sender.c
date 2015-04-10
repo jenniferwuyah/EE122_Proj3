@@ -18,7 +18,7 @@
  	time_t t;
  	srand((unsigned) time(&t));
 
- 	int listen_fd, comm_fd, client_len, port;
+ 	int listen_fd, comm_fd, client_len, port, r;
  	double packet_delay;
  	struct sockaddr_in server, client;
  	char buf[7];
@@ -38,6 +38,8 @@
 
 	/* Parse args */
 	port = atoi(argv[1]);
+	r = atoi(argv[2]);
+
 	if(port < 1024)
 	{
 		fprintf(stderr, "[sender]\tError: Invalid port number <%d>.\n", port);
@@ -81,9 +83,9 @@
 		printf("\n[sender]\tGot a new client!\n");
 
 		while (1) { // send 10 packets total
-			packet_delay = (rand() / (double)(RAND_MAX/10)) ;
+			packet_delay = (rand() / (double)(RAND_MAX/r)) ;
 
-			if (packet_delay > 0) {		
+			if (packet_delay > 0) {
 				usleep((int)(packet_delay * 1000000));
 			}
 
