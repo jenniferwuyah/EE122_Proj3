@@ -63,7 +63,6 @@
 	 	exit(1);
 	 }
 
-
 	printf("[router]\tWaiting for senders at port <%d>.\n", port);
 
 
@@ -106,7 +105,6 @@
  
 			/* delay */
 			// printf("[router]\tdelay for %f sec\n", packet_delay);	
-			
 		}
 
 		/*Send last empty packet for connectless to finish*/
