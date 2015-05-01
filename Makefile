@@ -1,4 +1,4 @@
-objects = source destination
+objects = sender receiver router
 
 all: $(objects)
 

@@ -6,102 +6,95 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <fcntl.h>
-#include <sys/stat.h>
+#include <sys/time.h>
 
-/* this defines the size of our buffer */
 #define PACKET_SIZE 128
-
- int main(int argc, char** argv)
- {
- 	//set up random number generator
- 	time_t t;
- 	srand((unsigned) time(&t));
-
- 	int listen_fd, comm_fd, client_len, port;
- 	double packet_delay;
- 	struct sockaddr_in server, client;
- 	char buf[7];
+int main(int argc, char** argv)
+{
+    int sd, buflen, r;
+    // double packet_delay;
+    unsigned short port;
+    char *router_address;
     char all_buf[10] = "0123456789";
- 	char buffer[PACKET_SIZE];
+    struct sockaddr_in router;
+    // char time_str[100];
+    // struct timeval start, end, conn_start, conn_end;
+    // float sec_delay;
+    // int bFlag = 0;
 
- 	if(argc != 3 || !strcmp(argv[1], "-h"))
- 	{
-		/* incorrect number of arguments given or help flag given.
-		 * Print usage */
-		 printf(" Usage:\n\n"
-		 	"\t%s <port>\n\n"
-		 	"\t%s <R>: mean inter-packet time.\n\n"
-		 	" This server will do as the hw instruction.\n\n",argv[0]);
-		return 1; /* failure */
-	}
+    char *temp = "Initial";
 
-	/* Parse args */
-	port = atoi(argv[1]);
-	if(port < 1024)
-	{
-		fprintf(stderr, "[sender]\tError: Invalid port number <%d>.\n", port);
-		return 1; /* failure */
-	}
+    if((argc != 3) || !strcmp(argv[1], "-h")) {
+        /* incorrect number of arguments given or help flag given.
+         * Print usage */
+        printf("%i\n",argc);
+        printf(" Usage:\n\n"
+               "\t%s <router_address>\n\n"
+               "\t <port>\n\n"
+               "\t <R>\n\n"
+               " This client will do as the hw instruction.\n\n",argv[0]);
+       return 1; /* failure */
+    }
 
-	/*Server set up*/
-	//connectionless sockets
+    /* Parse args */
+    port = atoi(argv[2]);
+    r = atoi(argv[3]);
+    router_address = argv[1];
+    
+    if(port < 1024) {
+        fprintf(stderr, "[receiver]\tError: Invalid port number <%d>.\n", port);
+        fprintf(stderr, "\t\t(Only accepts ports over 1000)\n");
+        return 1; /* failure */
+    }
 
-	if ((listen_fd = socket(AF_INET, SOCK_DGRAM,0)) == -1) {
-	 	printf("[sender]\tError: Couldn't make a socket.\n");
-	 	exit(1);
-	}
+    //create socket
+    if ( (sd = socket(AF_INET, SOCK_DGRAM,0)) == -1 ) {
+        fprintf(stderr, "[receiver]\tError: Can't create a socket.\n");
+        exit(1); 
+    }
 
-	/*Prepare server socket*/
-	server.sin_family = AF_INET;
-	server.sin_addr.s_addr = htons(INADDR_ANY);
-	server.sin_port = htons(port);
+    inet_pton(AF_INET, router_address, &(router.sin_addr));
+    router.sin_port = htons(port);
+    router.sin_family = AF_INET;
 
-	if (bind(listen_fd, (struct sockaddr*) &server, sizeof(server))== -1) {
-	 	printf("[sender]\tError: Socket binding failed.\n");
-	 	close(listen_fd);
-	 	exit(1);
-	 }
+    /* Connecting to the router */
 
+    //setup for delay timing
+    int first_pkt = 1;
+    int count =0;
+    int n =0;
 
-	printf("[sender]\tWaiting for clients at port <%d>.\n", port);
+    //Talk to router to begin. 
 
+    if (sendto(sd, temp, strlen(temp) , 0, (struct sockaddr *) &router, sizeof(router)) == -1) {
+        fprintf(stderr, "[receiver]\tError: Couldn't send to the router.");
+        close(sd);
+        exit(1);
+    }
 
-	while(1)
-	{
-		memset(&client, 0, sizeof(struct sockaddr_in));
-		client_len = sizeof(client);
-	 	if ((comm_fd = recvfrom(listen_fd, buf, 8 , 0,(struct sockaddr *) &client, (socklen_t *)&client_len)) == -1) {
-		 	printf("[sender]\tError: Cannot receive client.\n");
-		 	exit(1);
-		}
-	 	client.sin_family = AF_INET;
+	printf("\n[sender]\tConnected to router!\n");
 
+	while (1) { // send 10 packets total
+		// packet_delay = (rand() / (double)(RAND_MAX/r)) ;
 
-		printf("\n[sender]\tGot a new client!\n");
+		// if (packet_delay > 0) {
+		// 	usleep((int)(packet_delay * 1000000));
+		// }
 
-		while (1) { // send 10 packets total
-			packet_delay = (rand() / (double)(RAND_MAX/10)) ;
-
-			if (packet_delay > 0) {		
-				usleep((int)(packet_delay * 1000000));
-			}
-
-			if (sendto(listen_fd, all_buf, PACKET_SIZE, 0, (struct sockaddr *) &client, client_len) < 0) {
-				printf("[sender]\tError: Failed sending packet.\n");
-				perror("sendto");
-			}
- 
-			/* delay */
-			printf("[sender]\tdelay for %f sec\n", packet_delay);	
-			
+		if (sendto(sd, all_buf, PACKET_SIZE, 0, (struct sockaddr *) &router, sizeof(router)) < 0) {
+			printf("[sender]\tError: Failed sending packet.\n");
+			perror("sendto");
 		}
 
-		/*Send last empty packet for connectless to finish*/
-		char *done = "";
-		sendto(listen_fd, done, strlen(done), 0, (struct sockaddr *) &client, client_len);	
-
-		puts("[sender]\tClient left.");
+		/* delay */
+		// printf("[sender]\tdelay for %f sec\n", packet_delay);	
+		
 	}
+
+	/*Send last empty packet for connectless to finish*/
+	char *done = "";
+	sendto(sd, done, strlen(done), 0, (struct sockaddr *) &router, sizeof(router));	
+
+	puts("[sender]\tFinish sending packets.");
 	return 0;
 }
