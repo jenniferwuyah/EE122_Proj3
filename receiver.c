@@ -66,6 +66,7 @@ int main(int argc, char** argv)
         close(sd);
         exit(1);
     }
+    printf("\n[receiver]\tConnected to router!\n");
 
     char buf[4096];
     buflen = 4096;
@@ -73,7 +74,7 @@ int main(int argc, char** argv)
 
     // if (bFlag == 0) {
     while ((char_rec = recvfrom(sd, buf, buflen, 0, NULL, NULL)) > 0) {
-        puts("[receiver]\t Received");
+        printf("[receiver]\t Received: %s\n", buf);
 		//count+=char_rec;
 	  
 		bzero(buf, buflen);

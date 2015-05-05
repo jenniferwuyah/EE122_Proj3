@@ -19,12 +19,12 @@
  	time_t t;
  	srand((unsigned) time(&t));
 
- 	int listen_fd, comm_fd, sender_len, receiver_len, port, char_rec;
- 	struct sockaddr_in router, sender, receiver;
+ 	int listen_fd, comm_fd, port, char_rec, sender_len, receiver1_len, receiver2_len;
+ 	struct sockaddr_in router, sender, receiver1, receiver2;
  	char buf[7];
  	char buffer[STORAGE_SIZE];
 
- 	if(argc != 3 || !strcmp(argv[1], "-h"))
+ 	if(argc != 2 || !strcmp(argv[1], "-h"))
  	{
 		/* incorrect number of arguments given or help flag given.
 		 * Print usage */
@@ -68,49 +68,71 @@
 
 	while(1)
 	{
-		memset(&receiver, 0, sizeof(struct sockaddr_in));
-		receiver_len = sizeof(receiver);
-	 	if ((comm_fd = recvfrom(listen_fd, buf, 8 , 0,(struct sockaddr *) &receiver, (socklen_t *)&receiver_len)) == -1) {
+		memset(&receiver1, 0, sizeof(struct sockaddr_in));
+		receiver1_len = sizeof(receiver1);
+	 	if ((comm_fd = recvfrom(listen_fd, buf, 8 , 0,(struct sockaddr *) &receiver1, (socklen_t *)&receiver1_len)) == -1) {
 		 	printf("[router]\tError: Cannot receive receiver.\n");
 		 	exit(1);
 		}
-	 	receiver.sin_family = AF_INET;
-		printf("\n[router]\tGot a new receiver!\n");
+	 	receiver1.sin_family = AF_INET;
+		printf("\n[router]\tGot a new receiver 1!\n");
 
+		memset(&receiver2, 0, sizeof(struct sockaddr_in));
+		receiver2_len = sizeof(receiver2);
+	 	if ((comm_fd = recvfrom(listen_fd, buf, 8 , 0,(struct sockaddr *) &receiver2, (socklen_t *)&receiver2_len)) == -1) {
+		 	printf("[router]\tError: Cannot receive receiver.\n");
+		 	exit(1);
+		}
+	 	receiver2.sin_family = AF_INET;
+		printf("\n[router]\tGot a new receiver 2!\n");
 
 		memset(&sender, 0, sizeof(struct sockaddr_in));
 		sender_len = sizeof(sender);
-	 	if ((comm_fd = recvfrom(listen_fd, buf, 8 , 0,(struct sockaddr *) &sender, (socklen_t *)&sender_len)) == -1) {
-		 	printf("[router]\tError: Cannot receive sender.\n");
-		 	exit(1);
-		}
+	 // 	if ((comm_fd = recvfrom(listen_fd, buf, 8 , 0,(struct sockaddr *) &sender, (socklen_t *)&sender_len)) == -1) {
+		//  	printf("[router]\tError: Cannot receive sender.\n");
+		//  	exit(1);
+		// }
 	 	sender.sin_family = AF_INET;
-		printf("\n[router]\tGot a new sender!\n");
+		// printf("\n[router]\tGot a new sender!\n");
 
+		int count_done = 0;
 
-    	int char_rec;
-
-		while ((char_rec = recvfrom(listen_fd, buffer, PACKET_SIZE, 0, (struct sockaddr *) &sender, (socklen_t *)&sender_len)) > 0) {
-		//while (1) { // send 10 packets total
+		//while ((char_rec = recvfrom(listen_fd, buffer, PACKET_SIZE, 0, (struct sockaddr *) &sender, (socklen_t *)&sender_len)) > 0) {
+		while (count_done < 2) { // send 10 packets total
 			//packet_delay = (rand() / (double)(RAND_MAX/r)) ;
 
 			// if (packet_delay > 0) {
-			// 	usleep((int)(packet_delay * 1000000));
+			usleep(10000);
 			// }
-
-			if (sendto(listen_fd, buffer, PACKET_SIZE, 0, (struct sockaddr *) &receiver, receiver_len) < 0) {
-				printf("[router]\tError: Failed sending packet.\n");
-				perror("sendto");
+			if ((char_rec = recvfrom(listen_fd, buffer, PACKET_SIZE, 0, (struct sockaddr *) &sender, (socklen_t *)&sender_len)) <= 0) {
+				printf("sender %c finished sending.\n", buffer[0]);
+				count_done++;
 			}
+
+			if(buffer[0] == '1') {
+				puts("[router]\tSending to receiver 1.\n");
+				if (sendto(listen_fd, buffer, char_rec, 0, (struct sockaddr *) &receiver1, receiver1_len) < 0) {
+					printf("[router]\tError: Failed sending packet.\n");
+					perror("sendto");
+				}
+			} else {
+				puts("[router]\tSending to receiver 2.\n");
+				if (sendto(listen_fd, buffer, char_rec, 0, (struct sockaddr *) &receiver2, receiver2_len) < 0) {
+					printf("[router]\tError: Failed sending packet.\n");
+					perror("sendto");
+				}
+			}
+
+
  
 			/* delay */
 			// printf("[router]\tdelay for %f sec\n", packet_delay);	
 		}
 
 		/*Send last empty packet for connectless to finish*/
-		char *done = "";
-		sendto(listen_fd, done, strlen(done), 0, (struct sockaddr *) &receiver, receiver_len);	
-
+		//char *done = "";
+		//sendto(listen_fd, done, strlen(done), 0, (struct sockaddr *) &receiver1, receiver1_len);
+		//sendto(listen_fd, done, strlen(done), 0, (struct sockaddr *) &receiver2, receiver2_len);
 		puts("[router]\tsender left, closing with receiver.");
 	}
 	return 0;

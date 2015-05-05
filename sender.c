@@ -12,11 +12,13 @@
 int main(int argc, char** argv)
 {
     int sd, buflen, r;
-    // double packet_delay;
+    char *sender_id;
+    double packet_delay;
     unsigned short port;
     char *router_address;
-    char all_buf[10] = "0123456789";
+    char all_packets[10][6] = {"00000","11111","22222","33333","44444","55555","66666","77777","88888","99999"};
     struct sockaddr_in router;
+    char packet[PACKET_SIZE];
     // char time_str[100];
     // struct timeval start, end, conn_start, conn_end;
     // float sec_delay;
@@ -24,7 +26,7 @@ int main(int argc, char** argv)
 
     char *temp = "Initial";
 
-    if((argc != 3) || !strcmp(argv[1], "-h")) {
+    if((argc != 5) || !strcmp(argv[1], "-h")) {
         /* incorrect number of arguments given or help flag given.
          * Print usage */
         printf("%i\n",argc);
@@ -32,6 +34,7 @@ int main(int argc, char** argv)
                "\t%s <router_address>\n\n"
                "\t <port>\n\n"
                "\t <R>\n\n"
+               "\t <sender_id>\n\n"
                " This client will do as the hw instruction.\n\n",argv[0]);
        return 1; /* failure */
     }
@@ -40,16 +43,17 @@ int main(int argc, char** argv)
     port = atoi(argv[2]);
     r = atoi(argv[3]);
     router_address = argv[1];
+    sender_id = argv[4];
     
     if(port < 1024) {
-        fprintf(stderr, "[receiver]\tError: Invalid port number <%d>.\n", port);
+        fprintf(stderr, "[sender]\tError: Invalid port number <%d>.\n", port);
         fprintf(stderr, "\t\t(Only accepts ports over 1000)\n");
         return 1; /* failure */
     }
 
     //create socket
     if ( (sd = socket(AF_INET, SOCK_DGRAM,0)) == -1 ) {
-        fprintf(stderr, "[receiver]\tError: Can't create a socket.\n");
+        fprintf(stderr, "[sender]\tError: Can't create a socket.\n");
         exit(1); 
     }
 
@@ -66,28 +70,32 @@ int main(int argc, char** argv)
 
     //Talk to router to begin. 
 
-    if (sendto(sd, temp, strlen(temp) , 0, (struct sockaddr *) &router, sizeof(router)) == -1) {
-        fprintf(stderr, "[receiver]\tError: Couldn't send to the router.");
-        close(sd);
-        exit(1);
-    }
+    // if (sendto(sd, temp, strlen(temp) , 0, (struct sockaddr *) &router, sizeof(router)) == -1) {
+    //     fprintf(stderr, "[sender]\tError: Couldn't send to the router.");
+    //     close(sd);
+    //     exit(1);
+    // }
 
 	printf("\n[sender]\tConnected to router!\n");
 
-	while (1) { // send 10 packets total
-		// packet_delay = (rand() / (double)(RAND_MAX/r)) ;
+    for (int i=0; i<10; i++) {
+	//while (1) { // send 10 packets total
+		packet_delay = (rand() / (double)(RAND_MAX/r)) ;
 
-		// if (packet_delay > 0) {
-		// 	usleep((int)(packet_delay * 1000000));
-		// }
+		if (packet_delay > 0) {
+			usleep((int)(packet_delay * 1000000));
+		}
 
-		if (sendto(sd, all_buf, PACKET_SIZE, 0, (struct sockaddr *) &router, sizeof(router)) < 0) {
+        strcpy(packet, sender_id);
+        strcat(packet, all_packets[i]);
+
+		if (sendto(sd, packet, PACKET_SIZE, 0, (struct sockaddr *) &router, sizeof(router)) < 0) {
 			printf("[sender]\tError: Failed sending packet.\n");
 			perror("sendto");
 		}
 
 		/* delay */
-		// printf("[sender]\tdelay for %f sec\n", packet_delay);	
+		printf("[sender]\tdelay for %f sec\n", packet_delay);	
 		
 	}
 
