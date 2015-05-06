@@ -104,12 +104,17 @@
 			// if (packet_delay > 0) {
 			usleep(10000);
 			// }
-			if ((char_rec = recvfrom(listen_fd, buffer, PACKET_SIZE, 0, (struct sockaddr *) &sender, (socklen_t *)&sender_len)) <= 0) {
+			char_rec = recvfrom(listen_fd, buffer, PACKET_SIZE, 0, (struct sockaddr *) &sender, (socklen_t *)&sender_len);
+			printf("received packet from sender %c on port %hu\n", buffer[0], ntohs(sender.sin_port));
+
+			if (char_rec <= 0) {
 				printf("sender %c finished sending.\n", buffer[0]);
 				count_done++;
 			}
 
 			if(buffer[0] == '1') {
+
+
 				puts("[router]\tSending to receiver 1.\n");
 				if (sendto(listen_fd, buffer, char_rec, 0, (struct sockaddr *) &receiver1, receiver1_len) < 0) {
 					printf("[router]\tError: Failed sending packet.\n");

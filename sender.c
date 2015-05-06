@@ -67,7 +67,6 @@ int main(int argc, char** argv)
     int first_pkt = 1;
     int count =0;
     int n =0;
-
     //Talk to router to begin. 
 
     // if (sendto(sd, temp, strlen(temp) , 0, (struct sockaddr *) &router, sizeof(router)) == -1) {
@@ -80,10 +79,10 @@ int main(int argc, char** argv)
 
     for (int i=0; i<10; i++) {
 	//while (1) { // send 10 packets total
-		packet_delay = (rand() / (double)(RAND_MAX/r)) ;
+		packet_delay = (rand() / (double)(RAND_MAX/(2*r)));
 
 		if (packet_delay > 0) {
-			usleep((int)(packet_delay * 1000000));
+			usleep((int)(packet_delay * 1000));
 		}
 
         strcpy(packet, sender_id);
@@ -95,7 +94,7 @@ int main(int argc, char** argv)
 		}
 
 		/* delay */
-		printf("[sender]\tdelay for %f sec\n", packet_delay);	
+		printf("[sender]\tdelay for %f ms\n", packet_delay);	
 		
 	}
 
