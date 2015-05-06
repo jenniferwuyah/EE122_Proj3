@@ -76,12 +76,12 @@ int main(int argc, char** argv)
 
 	printf("\n[sender]\tConnected to router!\n");
     packet_no = 1;
-    //for (int i=0; i<10; i++) {
-	while (packet_no <= 9999) { // max of 9999 packets can be sent
-		packet_delay = (rand() / (double)(RAND_MAX/(2*r)));
+    for (int i=0; i<10; i++) {
+	//while (packet_no <= 9999) { // max of 9999 packets can be sent
+		packet_delay = (rand() / (double)(RAND_MAX/10))+(r-5);
 
 		if (packet_delay > 0) {
-			usleep((int)(packet_delay * 1000));
+			usleep((int)(packet_delay * 100000));
 		}
 
         sprintf(packet, "%s%04d%s", sender_id, packet_no, junk);

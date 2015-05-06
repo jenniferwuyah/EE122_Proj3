@@ -82,7 +82,7 @@ int main(int argc, char** argv)
         }
 
         char_rec = recvfrom(sd, buf, buflen, 0, NULL, NULL);
-        if (char_rec > 0) {
+        if (char_rec > 1) {
             printf("[receiver]\t Received: %s\n", buf);
         } else {
             break;
