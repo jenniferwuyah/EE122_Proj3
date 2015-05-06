@@ -10,7 +10,8 @@
 
 int main(int argc, char** argv)
 {
-    int sd, buflen;
+    int sd, buflen, delay;
+    double random_delay;
     unsigned short port;
     char *router_address;
     struct sockaddr_in router;
@@ -21,13 +22,14 @@ int main(int argc, char** argv)
 
     char *temp = "Initial";
 
-    if((argc != 3) || !strcmp(argv[1], "-h")) {
+    if((argc != 3 && argc != 4) || !strcmp(argv[1], "-h")) {
         /* incorrect number of arguments given or help flag given.
          * Print usage */
         printf("%i\n",argc);
         printf(" Usage:\n\n"
                "\t%s <router_address>\n\n"
                "\t <port>\n\n"
+               "\t [-d]\n\n"
                " This client will do as the hw instruction.\n\n",argv[0]);
        return 1; /* failure */
     }
@@ -35,6 +37,11 @@ int main(int argc, char** argv)
     /* Parse args */
     port = atoi(argv[2]);
     router_address = argv[1];
+    if (argc == 4) {
+        delay = 5;
+    } else {
+        delay = -1;
+    }
     
     if(port < 1024) {
         fprintf(stderr, "[receiver]\tError: Invalid port number <%d>.\n", port);
@@ -54,11 +61,6 @@ int main(int argc, char** argv)
 
     /* Connecting to the router */
 
-    //setup for delay timing
-    int first_pkt = 1;
-    int count =0;
-    int n =0;
-
     //Talk to router to begin. 
 
     if (sendto(sd, temp, strlen(temp) , 0, (struct sockaddr *) &router, sizeof(router)) == -1) {
@@ -72,10 +74,19 @@ int main(int argc, char** argv)
     buflen = 4096;
     int char_rec;
 
-    // if (bFlag == 0) {
-    while ((char_rec = recvfrom(sd, buf, buflen, 0, NULL, NULL)) > 0) {
-        printf("[receiver]\t Received: %s\n", buf);
-		//count+=char_rec;
+    while (1) {
+        if (delay == 5 || delay == 15) {
+            random_delay = (rand() / (double)(RAND_MAX/delay));
+            usleep((int)(random_delay*1000));
+            delay = (delay +10) % 20; //alternate
+        }
+
+        char_rec = recvfrom(sd, buf, buflen, 0, NULL, NULL);
+        if (char_rec > 0) {
+            printf("[receiver]\t Received: %s\n", buf);
+        } else {
+            break;
+        }
 	  
 		bzero(buf, buflen);
     } 

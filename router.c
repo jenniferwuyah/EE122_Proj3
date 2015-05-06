@@ -113,8 +113,6 @@
 			}
 
 			if(buffer[0] == '1') {
-
-
 				puts("[router]\tSending to receiver 1.\n");
 				if (sendto(listen_fd, buffer, char_rec, 0, (struct sockaddr *) &receiver1, receiver1_len) < 0) {
 					printf("[router]\tError: Failed sending packet.\n");
