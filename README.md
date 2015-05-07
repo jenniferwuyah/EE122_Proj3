@@ -9,17 +9,17 @@
 5. Run-time instructions (run the following in order):
 
 	1) Start Router
-		`./router <port>`
+	`./router <port>`
 
 	2) Start First Receiver
-	`./receiver <router_addr> <port>`
+	`./receiver <router_port> <sender1_address> <sender1_port>`
 			
 	3) Start Second Receiver
-	`./receiver <router_addr> <port>`
+	`./receiver <router_port> <sender2_address> <sender2_port> [-d]`
 			
 	4) Start First Sender
-	`./sender <router_addr> <port> <R> <sender_id>`
+	`./sender <router_address> <router_port> <sender_port> <R> 1`
 			
 	5) Start Second Sender
-	`./sender <router_addr> <port> <R> <sender_id>`
+	`./sender <router_address> <router_port> <sender_port> <R> 2`
 	

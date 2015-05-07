@@ -12,24 +12,23 @@ int main(int argc, char** argv)
 {
     int sd, buflen, delay;
     double random_delay;
-    unsigned short port;
-    char *router_address;
-    struct sockaddr_in router;
-    // char time_str[100];
-    // struct timeval start, end, conn_start, conn_end;
-    // float sec_delay;
-    // int bFlag = 0;
+    unsigned short port, sender_port;
+    char *router_address, *sender_address;
+    struct sockaddr_in router, sender;
 
     char *temp = "Initial";
+    char ack[10];
 
-    if((argc != 3 && argc != 4) || !strcmp(argv[1], "-h")) {
+    if((argc != 5 && argc != 6) || !strcmp(argv[1], "-h")) {
         /* incorrect number of arguments given or help flag given.
          * Print usage */
         printf("%i\n",argc);
         printf(" Usage:\n\n"
                "\t%s <router_address>\n\n"
-               "\t <port>\n\n"
-               "\t [-d]\n\n"
+               "\t <router_port>\n\n"
+               "\t <sender_address>\n\n"
+               "\t <sender_port>\n\n"
+               "\t [-d]: optional flag for random delay\n\n"
                " This client will do as the hw instruction.\n\n",argv[0]);
        return 1; /* failure */
     }
@@ -37,7 +36,10 @@ int main(int argc, char** argv)
     /* Parse args */
     port = atoi(argv[2]);
     router_address = argv[1];
-    if (argc == 4) {
+    sender_port = atoi(argv[4]);
+    sender_address = argv[3];
+
+    if (argc == 6) {
         delay = 5;
     } else {
         delay = -1;
@@ -59,6 +61,9 @@ int main(int argc, char** argv)
     router.sin_port = htons(port);
     router.sin_family = AF_INET;
 
+    inet_pton(AF_INET, sender_address, &(sender.sin_addr));
+    sender.sin_port = htons(sender_port);
+    sender.sin_family = AF_INET;
     /* Connecting to the router */
 
     //Talk to router to begin. 
@@ -75,15 +80,23 @@ int main(int argc, char** argv)
     int char_rec;
 
     while (1) {
-        if (delay == 5 || delay == 15) {
+        if (delay!= -1) {
             random_delay = (rand() / (double)(RAND_MAX/delay));
             usleep((int)(random_delay*1000));
             delay = (delay +10) % 20; //alternate
         }
 
         char_rec = recvfrom(sd, buf, buflen, 0, NULL, NULL);
-        if (char_rec > 1) {
+        sprintf(ack, "ACK%c", buf[0]);
+        if (char_rec > 0) {
             printf("[receiver]\t Received: %s\n", buf);
+            if (delay != -1) {
+                if (sendto(sd, ack, strlen(ack), 0, (struct sockaddr *) &sender, sizeof(sender)) == -1) {
+                    fprintf(stderr, "[receiver]\tError: Couldn't ACK to the sender.");
+                    close(sd);
+                    exit(1);
+                }
+            }
         } else {
             break;
         }

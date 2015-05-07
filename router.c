@@ -11,8 +11,10 @@
 #include <sys/stat.h>
 
 /* this defines the size of our buffer */
-#define STORAGE_SIZE 8192
+#define STORAGE_SIZE 64*128
 #define PACKET_SIZE 128
+#define TIMEOUT_SEC 30
+#define L 10
 
  int main(int argc, char** argv)
  {
@@ -22,7 +24,7 @@
 
  	int listen_fd, comm_fd, port, char_rec, sender_len, receiver1_len, receiver2_len;
  	struct sockaddr_in router, sender, receiver1, receiver2;
- 	int q1_ptr, q2_ptr;
+ 	int q1_ptr, q2_ptr, q1_len, q2_len;
  	char buf[7];
  	char buffer[PACKET_SIZE], queue1[STORAGE_SIZE], queue2[STORAGE_SIZE];
 
@@ -52,6 +54,14 @@
 	if ((listen_fd = socket(AF_INET, SOCK_DGRAM,0)) == -1) {
 	 	printf("[router]\tError: Couldn't make a socket.\n");
 	 	exit(1);
+	}
+
+	struct timeval timeout;
+	timeout.tv_sec = TIMEOUT_SEC;
+	timeout.tv_usec = 0;
+	
+	if(setsockopt(listen_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0) {
+		puts("setsockopt failed\n");
 	}
 
 	/*Prepare router socket*/
@@ -98,6 +108,8 @@
 		// printf("\n[router]\tGot a new sender!\n");
 	 	q1_ptr = 0;
 	 	q2_ptr = 0;
+	 	q1_len = 0;
+	 	q2_len = 0;
 		int count_done = 0;
 		bool should_run_q2 = false;
 
@@ -107,7 +119,7 @@
 
 			// if (packet_delay > 0) {
 			bzero(buffer, PACKET_SIZE);
-			usleep(10000);
+			usleep(1000*L);
 			// }
 			if (count_done < 2) {
 				char_rec = recvfrom(listen_fd, buffer, PACKET_SIZE, 0, (struct sockaddr *) &sender, (socklen_t *)&sender_len);
@@ -126,8 +138,9 @@
 					q2_ptr+=char_rec;
 				}
 			}
-			// printf("q1_ptr %i, q1: %s\n", q1_ptr, queue1);
-			// printf("q2_ptr %i, q2: %s\n", q2_ptr, queue2);
+
+			q1_len += q1_ptr;
+			q2_len += q2_ptr;
 
 			if(q1_ptr != 0) {
 				puts("[router]\tSending to receiver 1.\n");
@@ -141,7 +154,8 @@
 					perror("sendto");
 				}
 
- 			} else if (q2_ptr != 0 && should_run_q2){
+ 			} 
+ 			if (q2_ptr != 0 && should_run_q2){
 				puts("[router]\tSending to receiver 2.\n");
 				memmove(buffer, queue2, PACKET_SIZE);
 				// printf("packet is %s\n", buffer);
@@ -153,16 +167,17 @@
 					perror("sendto");
 				}
  			}
- 			should_run_q2 = (q2_ptr - q1_ptr >= 512) || (count_done>0);
- 			// printf("run q2? %i", should_run_q2);
+ 			should_run_q2 = (q2_ptr - q1_ptr >= 512) || (count_done>0 && q1_ptr == 0);
 			/* delay */
 			// printf("[router]\tdelay for %f sec\n", packet_delay);	
 		}
-
 		/*Send last empty packet for connectless to finish*/
 		char *done = "";
 		sendto(listen_fd, done, strlen(done), 0, (struct sockaddr *) &receiver1, receiver1_len);
 		sendto(listen_fd, done, strlen(done), 0, (struct sockaddr *) &receiver2, receiver2_len);
+		printf("q1 average length: %d\n", q1_len/600);
+		printf("q2 average length: %d\n", q2_len/600);
+
 		puts("[router]\tsender left, closing with receiver.");
 	}
 	return 0;
